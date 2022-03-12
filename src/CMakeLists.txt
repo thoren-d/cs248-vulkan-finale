@@ -24,6 +24,7 @@ add_executable(render
         app.cpp
         camera.h
         camera.cpp
+        constants.h
         device.h
         device.cpp
         layouts.h

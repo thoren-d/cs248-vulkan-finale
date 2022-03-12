@@ -3,6 +3,8 @@
 #include <array>
 #include <iostream>
 
+#include "constants.h"
+
 // Some Windows header file defines these >:(
 #undef min
 #undef max
@@ -21,24 +23,6 @@ Renderer::Renderer() {
 
   scene_environment_map_ = std::make_unique<Texture>(
       "../../../assets/quattro_canti_4k.png", Texture::Usage::Color);
-
-  materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "../../../assets/Stone_Tiles_003_COLOR.png",
-      "../../../assets/Stone_Tiles_003_NORM.png", 1.5f, 0.09f, 0.0f));
-  materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "../../../assets/Blue_Marble_002_COLOR.png",
-      "../../../assets/Blue_Marble_002_NORM.png", 1.1f, 0.06f, 0.0f));
-
-  meshes_.push_back(std::make_unique<Mesh>("../../../assets/plane.obj"));
-  meshes_.push_back(std::make_unique<Mesh>("../../../assets/teapot.obj"));
-  meshes_.push_back(std::make_unique<Mesh>("../../../assets/sphere.obj"));
-
-  // Plane
-  objects_.push_back(Object(materials_[0].get(), meshes_[0].get()));
-  objects_[0].position() = glm::vec3(0.0f, -0.417f, 0.0f);
-
-  // Teapot
-  objects_.push_back(Object(materials_[1].get(), meshes_[1].get()));
 
 
   // Lights
@@ -135,8 +119,6 @@ void Renderer::InitDepthBuffer() {
       .setLevelCount(1));
   depth_buffer_view_ = Device::Get()->device().createImageView(view_create_info);
 }
-
-constexpr uint32_t kShadowMapSize = 1024;
 
 void Renderer::InitShadowMaps() {
   for (int i = 0; i < NUM_LIGHTS; i++) {
@@ -257,9 +239,9 @@ void Renderer::Render() {
   for (auto &material : materials_) {
     for (auto &mesh : meshes_) {
       for (auto &object : objects_) {
-        if (object.material() == material.get() &&
-            object.mesh() == mesh.get()) {
-          instance_data_.push_back(object.GetInstanceData());
+        if (object->material() == material.get() &&
+            object->mesh() == mesh.get()) {
+          instance_data_.push_back(object->GetInstanceData());
         }
       }
     }
@@ -369,8 +351,8 @@ void Renderer::Draw(RenderPass pass, glm::mat4 view_proj) {
     for (auto &mesh : meshes_) {
       uint32_t num_instances = 0;
       for (auto &object : objects_) {
-        if (object.material() == material.get() &&
-            object.mesh() == mesh.get()) {
+        if (object->material() == material.get() &&
+            object->mesh() == mesh.get()) {
           num_instances += 1;
         }
       }
@@ -395,7 +377,7 @@ void Renderer::UpdateSceneDescriptors() {
   data.camera_position = camera_.position;
   for (int i = 0; i < NUM_LIGHTS; i++) {
     glm::mat4 view = glm::lookAt(lights_[i].position, lights_[i].position + glm::vec3(lights_[i].direction_angle), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 proj = glm::perspectiveFov(1.5f * lights_[i].direction_angle.w, 1.0f, 1.0f, 0.5f, 10.0f);
+    glm::mat4 proj = glm::perspectiveFov(2.0f * lights_[i].direction_angle.w, 1.0f, 1.0f, 0.5f, 10.0f);
     proj[1][1] *= -1.0f;
     lights_[i].world2light = proj * view;
 
@@ -453,4 +435,25 @@ void Renderer::UpdateSceneDescriptors() {
     .setImageInfo(shadow_map_infos);
   
   Device::Get()->device().updateDescriptorSets({ubo_write, env_write, shadow_maps_write}, {});
+}
+
+
+Material* Renderer::AddMaterial(std::unique_ptr<Material> material) {
+  Material* res = material.get();
+  materials_.emplace_back(std::move(material));
+  return res;
+}
+
+Mesh* Renderer::AddMesh(const std::string& mesh) {
+  std::unique_ptr<Mesh> m = std::make_unique<Mesh>(mesh);
+  Mesh* res = m.get();
+  meshes_.emplace_back(std::move(m));
+  return res;
+}
+
+Object* Renderer::AddObject(Mesh* mesh, Material* material) {
+  std::unique_ptr<Object> o = std::make_unique<Object>(material, mesh);
+  Object* res = o.get();
+  objects_.emplace_back(std::move(o));
+  return res;
 }

@@ -145,7 +145,7 @@ void main() {
         intensity *= spot_attenuation * distance_attenuation;
 
         // Shadow visibility calculation
-        const float pcf_step_size = 128;
+        const float pcf_step_size = 2048;
         float visibility = 0.0;
         vec4 light_space_ndc = scene.lights[i].world2light * vec4(in_position, 1.0);
         vec3 shadow_map_pos = light_space_ndc.xyz / light_space_ndc.w;

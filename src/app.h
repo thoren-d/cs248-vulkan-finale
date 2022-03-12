@@ -2,6 +2,7 @@
 #define APP_H_
 
 #include <memory>
+#include <vector>
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -17,6 +18,8 @@ public:
     void Run();
 
 private:
+    void LoadScene();
+
     void Update(double dt);
     void Render();
 
@@ -24,6 +27,8 @@ private:
 
     std::unique_ptr<Device> device_;
     std::unique_ptr<Renderer> renderer_;
+
+    std::vector<Object*> satellites_;
 
     double elapsed_ = 0.0;
     glm::vec2 previous_cursor_pos_ = glm::vec2(0.0f);

@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 
+#include "constants.h"
 #include "device.h"
 #include "layouts.h"
 #include "mesh.h"
@@ -261,8 +262,8 @@ void OpaqueMaterial::Pipelines::InitShadowPass() {
     .setTopology(vk::PrimitiveTopology::eTriangleList)
     .setPrimitiveRestartEnable(false);
 
-  auto viewport = vk::Viewport().setWidth(1024.0f).setHeight(1024.0f).setX(0.0f).setY(0.0f).setMinDepth(0.0f).setMaxDepth(1.0f);
-  auto scissor = vk::Rect2D().setOffset({0,0}).setExtent({1024, 1024});
+  auto viewport = vk::Viewport().setWidth((float)kShadowMapSize).setHeight((float)kShadowMapSize).setX(0.0f).setY(0.0f).setMinDepth(0.0f).setMaxDepth(1.0f);
+  auto scissor = vk::Rect2D().setOffset({0,0}).setExtent({kShadowMapSize, kShadowMapSize});
 
   auto viewport_state = vk::PipelineViewportStateCreateInfo()
     .setViewports(viewport)

@@ -26,6 +26,10 @@ public:
         return camera_;
     }
 
+    Material* AddMaterial(std::unique_ptr<Material> material);
+    Mesh* AddMesh(const std::string& mesh);
+    Object* AddObject(Mesh* mesh, Material* material);
+
     void Render();
 private:
 
@@ -70,7 +74,7 @@ private:
 
     std::vector<std::unique_ptr<Material>> materials_;
     std::vector<std::unique_ptr<Mesh>> meshes_;
-    std::vector<Object> objects_;
+    std::vector<std::unique_ptr<Object>> objects_;
     Light lights_[NUM_LIGHTS];
 
     ShadowMap shadow_maps_[NUM_LIGHTS];

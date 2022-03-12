@@ -1,6 +1,7 @@
 #include "app.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -37,11 +38,54 @@ App::App() {
 
   device_ = std::make_unique<Device>(window_);
   renderer_ = std::make_unique<Renderer>();
+
+  LoadScene();
 }
 
 App::~App() {
   glfwDestroyWindow(window_);
   glfwTerminate();
+}
+
+void App::LoadScene() {
+  auto tile = renderer_->AddMaterial(std::make_unique<OpaqueMaterial>(
+      "../../../assets/Stone_Tiles_003_COLOR.png",
+      "../../../assets/Stone_Tiles_003_NORM.png", 1.5f, 0.11f, 0.0f));
+  auto blue_marble = renderer_->AddMaterial(std::make_unique<OpaqueMaterial>(
+      "../../../assets/Blue_Marble_002_COLOR.png",
+      "../../../assets/Blue_Marble_002_NORM.png", 2.7f, 0.04f, 0.0f));
+  auto brick = renderer_->AddMaterial(std::make_unique<OpaqueMaterial>(
+      "../../../assets/brick_color_map.png",
+      "../../../assets/brick_normal_map.png", 1.2f, 0.25f, 0.0f));
+
+  auto plane = renderer_->AddMesh("../../../assets/plane.obj");
+  auto teapot = renderer_->AddMesh("../../../assets/teapot_low.obj");
+  auto sphere = renderer_->AddMesh("../../../assets/sphere.obj");
+  auto pedestal = renderer_->AddMesh("../../../assets/pedestal.obj");
+
+  auto floor = renderer_->AddObject(plane, tile);
+  floor->position() = glm::vec3(0.0f, -1.0f, 0.0f);
+
+  auto planet = renderer_->AddObject(sphere, blue_marble);
+  planet->scale() = glm::vec3(0.25f);
+
+  auto pedestal_object = renderer_->AddObject(pedestal, brick);
+  pedestal_object->scale() = glm::vec3(0.25f);
+  pedestal_object->position() = glm::vec3(0.0f, -0.5f, 0.0f);
+
+  for (size_t i = 0; i < 9001; i++) {
+    auto satellite =
+        renderer_->AddObject(teapot, i % 2 == 0 ? tile : brick);
+    float r = (std::rand() & 8191) / 8191.0f;
+    r = 0.3f + (6.0f * r);
+    float x = glm::cos(i * 0.95f);
+    float z = glm::sin(i * 0.95f);
+    satellite->scale() = glm::vec3(0.04f);
+    satellite->position() = glm::vec3(x, 0.0f, z) * r;
+    satellite->rotation() = glm::vec3(0.0f, r + i, 0.0f);
+
+    satellites_.push_back(satellite);
+  }
 }
 
 void App::Run() {
@@ -67,6 +111,23 @@ void App::Update(double dt) {
               << ", z=" << renderer_->camera().position.z << std::endl;
     elapsed_ = 0.0;
   }
+
+  float dt_phys = glm::min((float)dt, 1.0f / 60);
+
+  // Update satellites
+  for (int i = 0; i < satellites_.size(); i++) {
+    auto satellite = satellites_[i];
+
+    auto old_pos = satellite->position();
+    glm::vec3 velocity = glm::vec3(old_pos.z, 0.0f, -old_pos.x);
+    velocity = 0.5f * velocity / (1.0f + glm::length(velocity) * glm::length(velocity));
+    auto new_pos = old_pos + velocity * (float)dt_phys;
+    satellite->position() = new_pos;
+    satellite->rotation() *= glm::quat(glm::vec3(0.0f, dt_phys * (i % 9), 0.0f));
+  }
+
+
+
   double cursor_x, cursor_y;
   glfwGetCursorPos(window_, &cursor_x, &cursor_y);
   glm::vec2 cursor_pos(cursor_x, cursor_y);
