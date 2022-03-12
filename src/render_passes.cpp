@@ -59,6 +59,50 @@ vk::RenderPass CreateOpaqueRenderPass() {
     return device->device().createRenderPass(create_info);
 }
 
+vk::RenderPass CreateShadowRenderPass() {
+    auto depth_attachment = vk::AttachmentDescription()
+        .setFormat(vk::Format::eD32Sfloat)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+    auto depth_attachment_ref = vk::AttachmentReference()
+        .setAttachment(0)
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    auto subpass = vk::SubpassDescription()
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setPDepthStencilAttachment(&depth_attachment_ref);
+
+    auto start_dependency = vk::SubpassDependency()
+        .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+        .setDstSubpass(0)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setSrcAccessMask({})
+        .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+
+    // This dependency transitions to using the depth buffer as a sampled texture.
+    auto end_dependency = vk::SubpassDependency()
+        .setSrcSubpass(0)
+        .setDstSubpass(VK_SUBPASS_EXTERNAL)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+        .setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+        .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+
+    const std::array<vk::SubpassDependency, 2> dependencies = {start_dependency, end_dependency};
+
+    auto create_info = vk::RenderPassCreateInfo()
+        .setAttachments(depth_attachment)
+        .setSubpasses(subpass)
+        .setDependencies(dependencies);
+    return Device::Get()->device().createRenderPass(create_info);
+}
+
 static RenderPasses* g_RenderPasses = nullptr;
 
 }
@@ -67,12 +111,14 @@ RenderPasses::RenderPasses() {
     g_RenderPasses = this;
 
     opaque_pass_ = CreateOpaqueRenderPass();
+    shadow_pass_ = CreateShadowRenderPass();
 }
 
 RenderPasses::~RenderPasses() {
     g_RenderPasses = nullptr;
 
     Device::Get()->device().destroyRenderPass(opaque_pass_);
+    Device::Get()->device().destroyRenderPass(shadow_pass_);
 }
 
 RenderPasses* RenderPasses::Get() {
@@ -82,6 +128,8 @@ RenderPasses* RenderPasses::Get() {
 vk::RenderPass RenderPasses::GetRenderPass(RenderPass pass) {
     if (pass == RenderPass::Opaque) {
         return opaque_pass_;
+    } else if (pass == RenderPass::Shadow) {
+        return shadow_pass_;
     }
 
     return nullptr;

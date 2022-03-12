@@ -2,11 +2,16 @@
 
 #define NUM_LIGHTS 3
 
+struct Light {
+    mat4 world2light;
+    vec4 direction_angle;
+    vec3 intensity;
+    vec3 position;
+};
+
 layout (set=0, binding=0) uniform Scene {
     vec3 camera_position;
-    vec3 light_positions[NUM_LIGHTS];
-    vec4 light_directions_angles[NUM_LIGHTS];
-    vec3 light_intensities[NUM_LIGHTS];
+    Light lights[NUM_LIGHTS];
 } scene;
 
 vec3 color[3] = vec3[](

@@ -3,7 +3,7 @@ add_custom_target(build-time-make-directory ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/")
 
 function(add_shader shader)
-    add_custom_target(${shader} COMMAND "$ENV{VULKAN_SDK}/Bin/glslc.exe" "-o" "${CMAKE_CURRENT_BINARY_DIR}/${shader}.spv" "${CMAKE_CURRENT_SOURCE_DIR}/${shader}"
+    add_custom_target(${shader} COMMAND "$ENV{VULKAN_SDK}/Bin/glslc.exe" "-o" "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${shader}.spv" "${CMAKE_CURRENT_SOURCE_DIR}/${shader}"
             DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${shader}" build-time-make-directory)
 endfunction()
 
@@ -16,7 +16,7 @@ endfunction()
 
 message("$ENV{VULKAN_SDK}")
 
-add_shaders("basic.vert" "basic.frag")
+add_shaders("basic.vert" "basic.frag" "shadow.vert" "shadow.frag")
 
 add_executable(render
         main.cpp

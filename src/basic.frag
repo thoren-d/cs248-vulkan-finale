@@ -2,13 +2,19 @@
 
 #define NUM_LIGHTS 3
 
+struct Light {
+    mat4 world2light;
+    vec4 direction_angle;
+    vec3 intensity;
+    vec3 position;
+};
+
 layout (set=0, binding=0) uniform Scene {
     vec3 camera_position;
-    vec3 light_positions[NUM_LIGHTS];
-    vec4 light_directions_angles[NUM_LIGHTS];
-    vec3 light_intensities[NUM_LIGHTS];
+    Light lights[NUM_LIGHTS];
 } scene;
 layout (set=0, binding=1) uniform sampler2D environment_map;
+layout (set=0, binding=2) uniform sampler2D shadow_maps[NUM_LIGHTS];
 
 layout (set=1, binding=0) uniform Material {
     float ior;
@@ -122,12 +128,12 @@ void main() {
 
     for (int i = 0; i < NUM_LIGHTS; i++) {
         // Spot light calculations
-        vec3 intensity = scene.light_intensities[i];
-        vec3 light_pos = scene.light_positions[i];
-        float cone_angle = scene.light_directions_angles[i].w;
+        vec3 intensity = scene.lights[i].intensity;
+        vec3 light_pos = scene.lights[i].position;
+        float cone_angle = scene.lights[i].direction_angle.w;
         
         vec3 dir_to_surface = in_position - light_pos;
-        float angle = acos(dot(normalize(dir_to_surface), scene.light_directions_angles[i].xyz));
+        float angle = acos(dot(normalize(dir_to_surface), scene.lights[i].direction_angle.xyz));
 
         float min_angle = cone_angle * (1.0 - kSmoothing);
         float max_angle = cone_angle * (1.0 + kSmoothing);
@@ -138,8 +144,25 @@ void main() {
 
         intensity *= spot_attenuation * distance_attenuation;
 
-        vec3 L = normalize(scene.light_positions[i] - in_position);
-        radiance += intensity * BRDF(L, V, N, R, diffuse_color, specular_color);
+        // Shadow visibility calculation
+        const float pcf_step_size = 128;
+        float visibility = 0.0;
+        vec4 light_space_ndc = scene.lights[i].world2light * vec4(in_position, 1.0);
+        vec3 shadow_map_pos = light_space_ndc.xyz / light_space_ndc.w;
+        vec2 shadow_map_uv = (shadow_map_pos.xy + 1.0) * 0.5;
+        for (int j = -2; j <= 2; j++) {
+            for (int k = -2; k <= 2; k++) {
+                vec2 offset = vec2(j,k) / pcf_step_size;
+                float depth = texture(shadow_maps[i], shadow_map_uv + offset).x + 0.0005;
+                if (depth > shadow_map_pos.z) {
+                    visibility += 1.0;
+                }
+            }
+        }
+        visibility = visibility / 25.0;
+
+        vec3 L = normalize(light_pos - in_position);
+        radiance += visibility * intensity * BRDF(L, V, N, R, diffuse_color, specular_color);
     }
 
     outColor = vec4(radiance, 1.0);

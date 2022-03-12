@@ -19,6 +19,7 @@ public:
 
 private:
     vk::RenderPass opaque_pass_;
+    vk::RenderPass shadow_pass_;
 };
 
 #endif  // RENDER_PASSES_H_

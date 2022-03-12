@@ -16,21 +16,22 @@ Renderer::Renderer() {
   resource_manager_ = std::make_unique<ResourceManager>(transfer_buffer_);
   InitDepthBuffer();
   InitFramebuffers();
+  InitShadowMaps();
   InitSyncResources();
 
   scene_environment_map_ = std::make_unique<Texture>(
-      "../../assets/quattro_canti_4k.png", Texture::Usage::Color);
+      "../../../assets/quattro_canti_4k.png", Texture::Usage::Color);
 
   materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "../../assets/Stone_Tiles_003_COLOR.png",
-      "../../assets/Stone_Tiles_003_NORM.png", 1.5f, 0.09f, 0.0f));
+      "../../../assets/Stone_Tiles_003_COLOR.png",
+      "../../../assets/Stone_Tiles_003_NORM.png", 1.5f, 0.09f, 0.0f));
   materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "../../assets/Blue_Marble_002_COLOR.png",
-      "../../assets/Blue_Marble_002_NORM.png", 2.5f, 0.05f, 0.0f));
+      "../../../assets/Blue_Marble_002_COLOR.png",
+      "../../../assets/Blue_Marble_002_NORM.png", 1.1f, 0.06f, 0.0f));
 
-  meshes_.push_back(std::make_unique<Mesh>("../../assets/plane.obj"));
-  meshes_.push_back(std::make_unique<Mesh>("../../assets/teapot.obj"));
-  meshes_.push_back(std::make_unique<Mesh>("../../assets/sphere.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../../assets/plane.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../../assets/teapot.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../../assets/sphere.obj"));
 
   // Plane
   objects_.push_back(Object(materials_[0].get(), meshes_[0].get()));
@@ -38,6 +39,30 @@ Renderer::Renderer() {
 
   // Teapot
   objects_.push_back(Object(materials_[1].get(), meshes_[1].get()));
+
+
+  // Lights
+  Light back {
+    glm::mat4(1.0f),
+    glm::vec4(-glm::normalize(glm::vec3(-3.0f, 3.0f, -3.0f)), glm::radians(12.0f)),
+    glm::vec3(0.2f, 0.2f, 1.0f) * 0.35f * 10.0f,
+    glm::vec3(-3.0f, 3.0f, -3.0f),
+  };
+  Light key {
+    glm::mat4(1.0f),
+    glm::vec4(-glm::normalize(glm::vec3(-3.0f, 3.0f, 3.0f)), glm::radians(9.0f)),
+    glm::vec3(1.0f) * 1.0f * 10.0f,
+    glm::vec3(-3.0f, 3.0f, 3.0f),
+  };
+  Light fill {
+    glm::mat4(1.0f),
+    glm::vec4(-glm::normalize(glm::vec3(3.0f, 1.5f, 3.0f)), glm::radians(15.0f)),
+    glm::vec3(1.0f, 0.4f, 0.4f) * 0.75f * 10.0f,
+    glm::vec3(3.0f, 1.5f, 3.0f),
+  };
+  lights_[0] = back;
+  lights_[1] = key;
+  lights_[2] = fill;
 
   InitSceneDescriptors();
 }
@@ -111,6 +136,48 @@ void Renderer::InitDepthBuffer() {
   depth_buffer_view_ = Device::Get()->device().createImageView(view_create_info);
 }
 
+constexpr uint32_t kShadowMapSize = 1024;
+
+void Renderer::InitShadowMaps() {
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    vk::Format format = vk::Format::eD32Sfloat;
+    shadow_maps_[i].image = resource_manager_->CreateImageUninitialized(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, format, kShadowMapSize, kShadowMapSize);
+
+    auto view_create_info = vk::ImageViewCreateInfo()
+      .setViewType(vk::ImageViewType::e2D)
+      .setFormat(format)
+      .setComponents({})
+      .setImage(shadow_maps_[i].image.image)
+      .setSubresourceRange(vk::ImageSubresourceRange()
+        .setAspectMask(vk::ImageAspectFlagBits::eDepth)
+        .setBaseArrayLayer(0)
+        .setBaseMipLevel(0)
+        .setLayerCount(1)
+        .setLevelCount(1));
+    shadow_maps_[i].image_view = Device::Get()->device().createImageView(view_create_info);
+
+
+    auto framebuffer_info = vk::FramebufferCreateInfo()
+      .setAttachments(shadow_maps_[i].image_view)
+      .setRenderPass(render_passes_->GetRenderPass(RenderPass::Shadow))
+      .setLayers(1)
+      .setWidth(kShadowMapSize)
+      .setHeight(kShadowMapSize);
+    shadow_maps_[i].framebuffer = Device::Get()->device().createFramebuffer(framebuffer_info);
+
+    auto sampler_info = vk::SamplerCreateInfo()
+      .setAddressModeU(vk::SamplerAddressMode::eClampToBorder)
+      .setAddressModeV(vk::SamplerAddressMode::eClampToBorder)
+      .setBorderColor(vk::BorderColor::eFloatOpaqueWhite)
+      .setMagFilter(vk::Filter::eNearest)
+      .setMinFilter(vk::Filter::eNearest)
+      .setMipmapMode(vk::SamplerMipmapMode::eNearest)
+      .setCompareEnable(false)
+      .setAnisotropyEnable(false);
+    shadow_maps_[i].sampler = Device::Get()->device().createSampler(sampler_info);
+  }
+}
+
 void Renderer::InitCommandPool() {
   vk::CommandPoolCreateInfo create_info;
   create_info.setQueueFamilyIndex(Device::Get()->graphics_queue_family())
@@ -138,7 +205,7 @@ void Renderer::InitCommandBuffers() {
 void Renderer::InitSceneDescriptors() {
   auto ubo_size = vk::DescriptorPoolSize().setDescriptorCount(1).setType(
       vk::DescriptorType::eUniformBuffer);
-  auto sampler_size = vk::DescriptorPoolSize().setDescriptorCount(1).setType(
+  auto sampler_size = vk::DescriptorPoolSize().setDescriptorCount(1 + NUM_LIGHTS).setType(
       vk::DescriptorType::eCombinedImageSampler);
 
   std::array<vk::DescriptorPoolSize, 2> sizes = {ubo_size, sampler_size};
@@ -184,7 +251,36 @@ void Renderer::Render() {
   vk::CommandBufferBeginInfo begin_info;
   render_buffer_.begin(begin_info);
 
-  // TODO: Begin shadow pass
+  // Update instance data.
+  instance_data_.clear();
+  instance_data_.reserve(objects_.size());
+  for (auto &material : materials_) {
+    for (auto &mesh : meshes_) {
+      for (auto &object : objects_) {
+        if (object.material() == material.get() &&
+            object.mesh() == mesh.get()) {
+          instance_data_.push_back(object.GetInstanceData());
+        }
+      }
+    }
+  }
+  instance_data_buffer_ = resource_manager_->CreateHostBufferWithData(
+      vk::BufferUsageFlagBits::eVertexBuffer, instance_data_.data(),
+      sizeof(InstanceData) * instance_data_.size());
+
+  // Begin shadow pass
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    auto shadow_pass_begin_info = vk::RenderPassBeginInfo()
+      .setRenderPass(render_passes_->GetRenderPass(RenderPass::Shadow))
+      .setFramebuffer(shadow_maps_[i].framebuffer)
+      .setRenderArea({{0,0}, {kShadowMapSize, kShadowMapSize}})
+      .setClearValues(vk::ClearValue().setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0)));
+    render_buffer_.beginRenderPass(shadow_pass_begin_info, vk::SubpassContents::eInline);
+
+    Draw(RenderPass::Shadow, lights_[i].world2light);
+
+    render_buffer_.endRenderPass();
+  }
 
   // Begin opaque pass
   vk::RenderPassBeginInfo opaque_begin_info;
@@ -203,69 +299,8 @@ void Renderer::Render() {
   render_buffer_.beginRenderPass(opaque_begin_info,
                                  vk::SubpassContents::eInline);
 
-  PushConstants push_constants;
-  push_constants.view_proj = camera_.GetViewProj();
 
-  // Update instance data.
-  instance_data_.clear();
-  instance_data_.reserve(objects_.size());
-  for (auto &material : materials_) {
-    for (auto &mesh : meshes_) {
-      for (auto &object : objects_) {
-        if (object.material() == material.get() &&
-            object.mesh() == mesh.get()) {
-          instance_data_.push_back(object.GetInstanceData());
-        }
-      }
-    }
-  }
-  instance_data_buffer_ = resource_manager_->CreateHostBufferWithData(
-      vk::BufferUsageFlagBits::eVertexBuffer, instance_data_.data(),
-      sizeof(InstanceData) * instance_data_.size());
-
-  uint32_t instance_offset = 0;
-  vk::Pipeline pipeline = nullptr;
-  for (auto &material : materials_) {
-    vk::Pipeline new_pipeline =
-        material->GetPipelineForRenderPass(RenderPass::Opaque);
-    vk::PipelineLayout layout =
-        material->GetPipelineLayoutForRenderPass(RenderPass::Opaque);
-    vk::DescriptorSet material_descriptors =
-        material->GetMaterialDescriptorSetForRenderPass(RenderPass::Opaque);
-    render_buffer_.bindDescriptorSets(
-        vk::PipelineBindPoint::eGraphics, layout, 0,
-        {scene_descriptors_, material_descriptors}, {});
-    if (pipeline != new_pipeline) {
-      pipeline = new_pipeline;
-      render_buffer_.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-      render_buffer_.pushConstants(layout,
-                                   vk::ShaderStageFlagBits::eVertex |
-                                       vk::ShaderStageFlagBits::eFragment,
-                                   0, sizeof(PushConstants), &push_constants);
-    }
-
-    for (auto &mesh : meshes_) {
-      uint32_t num_instances = 0;
-      for (auto &object : objects_) {
-        if (object.material() == material.get() &&
-            object.mesh() == mesh.get()) {
-          num_instances += 1;
-        }
-      }
-
-      if (num_instances == 0) {
-        continue;
-      }
-
-      render_buffer_.bindVertexBuffers(
-          0, {mesh->vertex_buffer(), instance_data_buffer_.buffer},
-          {0, instance_offset * sizeof(InstanceData)});
-      render_buffer_.draw(static_cast<uint32_t>(mesh->vertex_count()),
-                          num_instances, 0, 0);
-
-      instance_offset += num_instances;
-    }
-  }
+  Draw(RenderPass::Opaque, camera_.GetViewProj());
 
   render_buffer_.endRenderPass();
 
@@ -301,20 +336,70 @@ void Renderer::Render() {
     throw "Error on present.";
 }
 
+void Renderer::Draw(RenderPass pass, glm::mat4 view_proj) {
+  PushConstants push_constants;
+  push_constants.view_proj = view_proj;
+
+  uint32_t instance_offset = 0;
+  vk::Pipeline pipeline = nullptr;
+  for (auto &material : materials_) {
+    vk::Pipeline new_pipeline =
+        material->GetPipelineForRenderPass(pass);
+    vk::PipelineLayout layout =
+        material->GetPipelineLayoutForRenderPass(pass);
+    vk::DescriptorSet material_descriptors =
+        material->GetMaterialDescriptorSetForRenderPass(pass);
+    
+    // Shadow pass only uses push constants and instance data.
+    if (pass != RenderPass::Shadow) {
+      render_buffer_.bindDescriptorSets(
+          vk::PipelineBindPoint::eGraphics, layout, 0,
+          {scene_descriptors_, material_descriptors}, {});
+    }
+
+    if (pipeline != new_pipeline) {
+      pipeline = new_pipeline;
+      render_buffer_.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      render_buffer_.pushConstants(layout,
+                                   vk::ShaderStageFlagBits::eVertex |
+                                       vk::ShaderStageFlagBits::eFragment,
+                                   0, sizeof(PushConstants), &push_constants);
+    }
+
+    for (auto &mesh : meshes_) {
+      uint32_t num_instances = 0;
+      for (auto &object : objects_) {
+        if (object.material() == material.get() &&
+            object.mesh() == mesh.get()) {
+          num_instances += 1;
+        }
+      }
+
+      if (num_instances == 0) {
+        continue;
+      }
+
+      render_buffer_.bindVertexBuffers(
+          0, {mesh->vertex_buffer(), instance_data_buffer_.buffer},
+          {0, instance_offset * sizeof(InstanceData)});
+      render_buffer_.draw(static_cast<uint32_t>(mesh->vertex_count()),
+                          num_instances, 0, 0);
+
+      instance_offset += num_instances;
+    }
+  }
+}
+
 void Renderer::UpdateSceneDescriptors() {
   SceneUniforms data;
   data.camera_position = camera_.position;
-  data.light_positions[0] = glm::vec4(-3.0f, 3.0f, -3.0f, 0.0f);
-  data.light_positions[1] = glm::vec4(-3.0f, 3.0f, 3.0f, 0.0f);
-  data.light_positions[2] = glm::vec4(3.0f, 0.0f, 3.0f, 0.0f);
-  data.light_intensities[0] = glm::vec4(0.2f, 0.2f, 1.0f, 0.0f) * 0.25f * 10.0f;
-  data.light_intensities[1] = glm::vec4(1.0f) * 1.0f * 10.0f;
-  data.light_intensities[2] = glm::vec4(1.0f, 0.4f, 0.4f, 0.0f) * 0.5f * 10.0f;
-  constexpr float kAngles[3] = {6.0f, 9.0f, 7.0f};
-  for (int i = 0; i < 3; i++) {
-    data.light_directions_angles[i] =
-        glm::vec4(glm::normalize(-glm::vec3(data.light_positions[i])),
-                  glm::radians(kAngles[i]));
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    glm::mat4 view = glm::lookAt(lights_[i].position, lights_[i].position + glm::vec3(lights_[i].direction_angle), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 proj = glm::perspectiveFov(1.5f * lights_[i].direction_angle.w, 1.0f, 1.0f, 0.5f, 10.0f);
+    proj[1][1] *= -1.0f;
+    lights_[i].world2light = proj * view;
+
+    data.lights[i] = lights_[i];
   }
 
   if (scene_uniform_buffer_.buffer) {
@@ -337,18 +422,35 @@ void Renderer::UpdateSceneDescriptors() {
                        .setDstArrayElement(0)
                        .setPBufferInfo(&buffer_info);
 
-  auto sampler_info =
+  auto env_info =
       vk::DescriptorImageInfo()
           .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
           .setImageView(scene_environment_map_->image_view())
           .setSampler(scene_environment_map_->sampler());
-  auto sampler_write =
+  auto env_write =
       vk::WriteDescriptorSet()
           .setDescriptorCount(1)
           .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
           .setDstSet(scene_descriptors_)
           .setDstBinding(1)
           .setDstArrayElement(0)
-          .setPImageInfo(&sampler_info);
-  Device::Get()->device().updateDescriptorSets({ubo_write, sampler_write}, {});
+          .setPImageInfo(&env_info);
+
+  // TODO: Pass shadow maps as sampled textures.
+  std::array<vk::DescriptorImageInfo, NUM_LIGHTS> shadow_map_infos = {};
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    shadow_map_infos[i] = vk::DescriptorImageInfo()
+      .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+      .setImageView(shadow_maps_[i].image_view)
+      .setSampler(shadow_maps_[i].sampler);
+  }
+  auto shadow_maps_write = vk::WriteDescriptorSet()
+    .setDescriptorCount(NUM_LIGHTS)
+    .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+    .setDstSet(scene_descriptors_)
+    .setDstBinding(2)
+    .setDstArrayElement(0)
+    .setImageInfo(shadow_map_infos);
+  
+  Device::Get()->device().updateDescriptorSets({ubo_write, env_write, shadow_maps_write}, {});
 }

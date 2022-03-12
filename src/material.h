@@ -37,6 +37,10 @@ class OpaqueMaterial : public Material {
 
     Pipelines();
     ~Pipelines();
+
+  private:
+    void InitOpaquePass();
+    void InitShadowPass();
   };
   static std::weak_ptr<Pipelines> s_pipelines_;
   static std::shared_ptr<Pipelines> GetPipelines();

@@ -28,11 +28,16 @@ std::array<vk::VertexInputAttributeDescription, 11> GetVertexInputAttributeDescr
 
 #define NUM_LIGHTS 3
 
+struct Light {
+    alignas(16) glm::mat4 world2light;
+    alignas(16) glm::vec4 direction_angle;
+    alignas(16) glm::vec3 intensity;
+    alignas(16) glm::vec3 position;
+};
+
 struct SceneUniforms {
     alignas(16) glm::vec3 camera_position;
-    alignas(16) glm::vec4 light_positions[NUM_LIGHTS];
-    alignas(16) glm::vec4 light_directions_angles[NUM_LIGHTS];
-    alignas(16) glm::vec4 light_intensities[NUM_LIGHTS];
+    Light lights[NUM_LIGHTS];
 };
 
 struct PushConstants {

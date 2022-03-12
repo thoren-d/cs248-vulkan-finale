@@ -28,11 +28,21 @@ public:
 
     void Render();
 private:
+
+    void Draw(RenderPass pass, glm::mat4 view_proj);
+
     struct SyncResources {
         vk::Semaphore image_available;
         vk::Semaphore render_finished;
         vk::Fence in_flight;
     } sync_resources_;
+
+    struct ShadowMap {
+        ResourceManager::Image image;
+        vk::ImageView image_view;
+        vk::Sampler sampler;
+        vk::Framebuffer framebuffer;
+    };
 
     void InitCommandBuffers();
     void InitCommandPool();
@@ -40,6 +50,7 @@ private:
     void InitSyncResources();
 
     void InitDepthBuffer();
+    void InitShadowMaps();
 
     void InitSceneDescriptors();
 
@@ -60,6 +71,9 @@ private:
     std::vector<std::unique_ptr<Material>> materials_;
     std::vector<std::unique_ptr<Mesh>> meshes_;
     std::vector<Object> objects_;
+    Light lights_[NUM_LIGHTS];
+
+    ShadowMap shadow_maps_[NUM_LIGHTS];
 
     std::vector<InstanceData> instance_data_;
     ResourceManager::Buffer instance_data_buffer_;
