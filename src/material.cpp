@@ -201,11 +201,11 @@ void OpaqueMaterial::Pipelines::InitOpaquePass() {
       vk::SampleCountFlagBits::e1);
 
   auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
-    .setDepthTestEnable(true)
-    .setDepthWriteEnable(true)
-    .setDepthCompareOp(vk::CompareOp::eLess)
-    .setDepthBoundsTestEnable(false)
-    .setStencilTestEnable(false);
+                                 .setDepthTestEnable(true)
+                                 .setDepthWriteEnable(true)
+                                 .setDepthCompareOp(vk::CompareOp::eLess)
+                                 .setDepthBoundsTestEnable(false)
+                                 .setStencilTestEnable(false);
 
   vk::PipelineColorBlendAttachmentState color_blend_attachment;
   color_blend_attachment
@@ -246,61 +246,78 @@ void OpaqueMaterial::Pipelines::InitShadowPass() {
   auto vert = CreateShaderModule("./shadow.vert.spv");
   auto frag = CreateShaderModule("./shadow.frag.spv");
 
-  auto vert_stage = GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eVertex, vert);
-  auto frag_stage = GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eFragment, frag);
+  auto vert_stage =
+      GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eVertex, vert);
+  auto frag_stage =
+      GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eFragment, frag);
 
-  std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stages = {vert_stage, frag_stage};
+  std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stages = {vert_stage,
+                                                                    frag_stage};
 
   auto vert_bindings = GetVertexInputBindingDescriptions();
   auto vert_attributes = GetVertexInputAttributeDescriptions();
 
-  auto vertex_input_state = vk::PipelineVertexInputStateCreateInfo()
-    .setVertexBindingDescriptions(vert_bindings)
-    .setVertexAttributeDescriptions(vert_attributes);
+  auto vertex_input_state =
+      vk::PipelineVertexInputStateCreateInfo()
+          .setVertexBindingDescriptions(vert_bindings)
+          .setVertexAttributeDescriptions(vert_attributes);
 
-  auto input_assembly_state = vk::PipelineInputAssemblyStateCreateInfo()
-    .setTopology(vk::PrimitiveTopology::eTriangleList)
-    .setPrimitiveRestartEnable(false);
+  auto input_assembly_state =
+      vk::PipelineInputAssemblyStateCreateInfo()
+          .setTopology(vk::PrimitiveTopology::eTriangleList)
+          .setPrimitiveRestartEnable(false);
 
-  auto viewport = vk::Viewport().setWidth((float)kShadowMapSize).setHeight((float)kShadowMapSize).setX(0.0f).setY(0.0f).setMinDepth(0.0f).setMaxDepth(1.0f);
-  auto scissor = vk::Rect2D().setOffset({0,0}).setExtent({kShadowMapSize, kShadowMapSize});
+  auto viewport = vk::Viewport()
+                      .setWidth((float)kShadowMapSize)
+                      .setHeight((float)kShadowMapSize)
+                      .setX(0.0f)
+                      .setY(0.0f)
+                      .setMinDepth(0.0f)
+                      .setMaxDepth(1.0f);
+  auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(
+      {kShadowMapSize, kShadowMapSize});
 
-  auto viewport_state = vk::PipelineViewportStateCreateInfo()
-    .setViewports(viewport)
-    .setScissors(scissor);
+  auto viewport_state =
+      vk::PipelineViewportStateCreateInfo().setViewports(viewport).setScissors(
+          scissor);
 
   auto rasterizer_state = vk::PipelineRasterizationStateCreateInfo()
-    .setDepthClampEnable(false)
-    .setDepthBiasEnable(false)
-    .setRasterizerDiscardEnable(false)
-    .setPolygonMode(vk::PolygonMode::eFill)
-    .setLineWidth(1.0f)
-    .setCullMode(vk::CullModeFlagBits::eBack)
-    .setFrontFace(vk::FrontFace::eClockwise);
+                              .setDepthClampEnable(false)
+                              .setDepthBiasEnable(false)
+                              .setRasterizerDiscardEnable(false)
+                              .setPolygonMode(vk::PolygonMode::eFill)
+                              .setLineWidth(1.0f)
+                              .setCullMode(vk::CullModeFlagBits::eBack)
+                              .setFrontFace(vk::FrontFace::eClockwise);
 
-  auto multisample_state = vk::PipelineMultisampleStateCreateInfo()
-    .setSampleShadingEnable(false)
-    .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+  auto multisample_state =
+      vk::PipelineMultisampleStateCreateInfo()
+          .setSampleShadingEnable(false)
+          .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
   auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
-    .setDepthTestEnable(true)
-    .setDepthWriteEnable(true)
-    .setDepthCompareOp(vk::CompareOp::eLess)
-    .setDepthBoundsTestEnable(false)
-    .setStencilTestEnable(false);
+                                 .setDepthTestEnable(true)
+                                 .setDepthWriteEnable(true)
+                                 .setDepthCompareOp(vk::CompareOp::eLess)
+                                 .setDepthBoundsTestEnable(false)
+                                 .setStencilTestEnable(false);
 
-  auto pipeline_create_info = vk::GraphicsPipelineCreateInfo()
-    .setLayout(Layouts::Get()->shadow_pipeline_layout())
-    .setStages(shader_stages)
-    .setPVertexInputState(&vertex_input_state)
-    .setPInputAssemblyState(&input_assembly_state)
-    .setPViewportState(&viewport_state)
-    .setPRasterizationState(&rasterizer_state)
-    .setPMultisampleState(&multisample_state)
-    .setPDepthStencilState(&depth_stencil_state)
-    .setRenderPass(RenderPasses::Get()->GetRenderPass(RenderPass::Shadow))
-    .setSubpass(0);
-  shadow_pass = Device::Get()->device().createGraphicsPipeline(nullptr, pipeline_create_info).value;
+  auto pipeline_create_info =
+      vk::GraphicsPipelineCreateInfo()
+          .setLayout(Layouts::Get()->shadow_pipeline_layout())
+          .setStages(shader_stages)
+          .setPVertexInputState(&vertex_input_state)
+          .setPInputAssemblyState(&input_assembly_state)
+          .setPViewportState(&viewport_state)
+          .setPRasterizationState(&rasterizer_state)
+          .setPMultisampleState(&multisample_state)
+          .setPDepthStencilState(&depth_stencil_state)
+          .setRenderPass(RenderPasses::Get()->GetRenderPass(RenderPass::Shadow))
+          .setSubpass(0);
+  shadow_pass = Device::Get()
+                    ->device()
+                    .createGraphicsPipeline(nullptr, pipeline_create_info)
+                    .value;
 
   Device::Get()->device().destroyShaderModule(vert);
   Device::Get()->device().destroyShaderModule(frag);
@@ -335,4 +352,90 @@ OpaqueMaterial::GetPipelineLayoutForRenderPass(RenderPass pass) {
     return Layouts::Get()->general_pipeline_layout();
   }
   return nullptr;
+}
+
+vk::Pipeline GetSkyPipeline() {
+  auto vert = CreateShaderModule("./sky.vert.spv");
+  auto frag = CreateShaderModule("./sky.frag.spv");
+
+  auto vert_stage =
+      GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eVertex, vert);
+  auto frag_stage =
+      GetShaderStageCreateInfo(vk::ShaderStageFlagBits::eFragment, frag);
+
+  std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stages = {vert_stage,
+                                                                    frag_stage};
+
+  auto vertex_input_state = vk::PipelineVertexInputStateCreateInfo();
+
+  auto input_assembly_state =
+      vk::PipelineInputAssemblyStateCreateInfo()
+          .setTopology(vk::PrimitiveTopology::eTriangleList)
+          .setPrimitiveRestartEnable(false);
+
+  vk::Extent2D swapchain_extent = Device::Get()->swapchain_extent();
+  auto viewport = vk::Viewport()
+                      .setWidth((float)swapchain_extent.width)
+                      .setHeight((float)swapchain_extent.height)
+                      .setX(0.0f)
+                      .setY(0.0f)
+                      .setMinDepth(0.0f)
+                      .setMaxDepth(1.0f);
+  auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent(swapchain_extent);
+
+  auto viewport_state =
+      vk::PipelineViewportStateCreateInfo().setViewports(viewport).setScissors(
+          scissor);
+
+  auto rasterizer_state = vk::PipelineRasterizationStateCreateInfo()
+                              .setDepthClampEnable(false)
+                              .setDepthBiasEnable(false)
+                              .setRasterizerDiscardEnable(false)
+                              .setPolygonMode(vk::PolygonMode::eFill)
+                              .setLineWidth(1.0f)
+                              .setCullMode(vk::CullModeFlagBits::eBack)
+                              .setFrontFace(vk::FrontFace::eClockwise);
+
+  auto multisample_state =
+      vk::PipelineMultisampleStateCreateInfo()
+          .setSampleShadingEnable(false)
+          .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+
+  auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
+                                 .setDepthTestEnable(true)
+                                 .setDepthWriteEnable(true)
+                                 .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
+                                 .setDepthBoundsTestEnable(false)
+                                 .setStencilTestEnable(false);
+
+  auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
+      .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+      .setBlendEnable(false);
+
+  auto color_blend_state = vk::PipelineColorBlendStateCreateInfo()
+      .setLogicOpEnable(false)
+      .setAttachments(color_blend_attachment);
+
+  auto pipeline_create_info =
+      vk::GraphicsPipelineCreateInfo()
+          .setLayout(Layouts::Get()->sky_pipeline_layout())
+          .setStages(shader_stages)
+          .setPVertexInputState(&vertex_input_state)
+          .setPInputAssemblyState(&input_assembly_state)
+          .setPViewportState(&viewport_state)
+          .setPRasterizationState(&rasterizer_state)
+          .setPMultisampleState(&multisample_state)
+          .setPDepthStencilState(&depth_stencil_state)
+          .setPColorBlendState(&color_blend_state)
+          .setRenderPass(RenderPasses::Get()->GetRenderPass(RenderPass::Opaque))
+          .setSubpass(0);
+  vk::Pipeline res = Device::Get()
+                         ->device()
+                         .createGraphicsPipeline(nullptr, pipeline_create_info)
+                         .value;
+
+  Device::Get()->device().destroyShaderModule(vert);
+  Device::Get()->device().destroyShaderModule(frag);
+
+  return res;
 }

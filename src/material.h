@@ -62,4 +62,6 @@ class OpaqueMaterial : public Material {
   std::shared_ptr<Pipelines> pipelines_;
 };
 
+vk::Pipeline GetSkyPipeline();
+
 #endif  // MATERIAL_H_

@@ -16,7 +16,7 @@ endfunction()
 
 message("$ENV{VULKAN_SDK}")
 
-add_shaders("basic.vert" "basic.frag" "shadow.vert" "shadow.frag")
+add_shaders("basic.vert" "basic.frag" "shadow.vert" "shadow.frag" "sky.vert" "sky.frag")
 
 add_executable(render
         main.cpp

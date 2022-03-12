@@ -14,12 +14,6 @@ layout (set=0, binding=0) uniform Scene {
     Light lights[NUM_LIGHTS];
 } scene;
 
-vec3 color[3] = vec3[](
-    vec3(1.0, 0.0, 0.0),
-    vec3(0.0, 1.0, 0.0),
-    vec3(0.0, 0.0, 1.0)
-);
-
 // Push Constants (view data)
 layout(push_constant) uniform View {
     mat4 view_proj;

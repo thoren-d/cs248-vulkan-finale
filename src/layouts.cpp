@@ -23,11 +23,11 @@ vk::DescriptorSetLayout CreateDescriptorSetLayout_Scene() {
           .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
   auto shadow_map_binding =
-    vk::DescriptorSetLayoutBinding()
-        .setBinding(2)
-        .setDescriptorCount(NUM_LIGHTS)
-        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-        .setStageFlags(vk::ShaderStageFlagBits::eFragment);
+      vk::DescriptorSetLayoutBinding()
+          .setBinding(2)
+          .setDescriptorCount(NUM_LIGHTS)
+          .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+          .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
   std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
       ubo_binding, environment_map_binding, shadow_map_binding};
@@ -88,8 +88,7 @@ Layouts::Layouts() {
       vk::PushConstantRange()
           .setOffset(0)
           .setSize(sizeof(glm::mat4))
-          .setStageFlags(vk::ShaderStageFlagBits::eVertex |
-                         vk::ShaderStageFlagBits::eFragment);
+          .setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
   auto general_pipeline_layout_info =
       vk::PipelineLayoutCreateInfo()
@@ -105,6 +104,13 @@ Layouts::Layouts() {
       vk::PipelineLayoutCreateInfo().setPushConstantRanges(push_constant_range);
   shadow_pipeline_layout_ =
       Device::Get()->device().createPipelineLayout(shadow_pipeline_layout_info);
+
+  auto sky_pipeline_layout_info =
+      vk::PipelineLayoutCreateInfo()
+          .setPushConstantRanges(push_constant_range)
+          .setSetLayouts(scene_dsl_);
+  sky_pipeline_layout_ =
+      Device::Get()->device().createPipelineLayout(sky_pipeline_layout_info);
 }
 
 Layouts::~Layouts() {
@@ -113,4 +119,5 @@ Layouts::~Layouts() {
   Device::Get()->device().destroyDescriptorSetLayout(scene_dsl_);
   Device::Get()->device().destroyPipelineLayout(general_pipeline_layout_);
   Device::Get()->device().destroyPipelineLayout(shadow_pipeline_layout_);
+  Device::Get()->device().destroyPipelineLayout(sky_pipeline_layout_);
 }

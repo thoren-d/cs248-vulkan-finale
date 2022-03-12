@@ -87,6 +87,8 @@ private:
     ResourceManager::Buffer scene_uniform_buffer_;
     std::unique_ptr<Texture> scene_environment_map_;
 
+    vk::Pipeline sky_pipeline_;
+
     Camera camera_;
 };
 
