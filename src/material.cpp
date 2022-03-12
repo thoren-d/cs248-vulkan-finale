@@ -189,6 +189,13 @@ OpaqueMaterial::Pipelines::Pipelines() {
   multisample_state.setSampleShadingEnable(false).setRasterizationSamples(
       vk::SampleCountFlagBits::e1);
 
+  auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
+    .setDepthTestEnable(true)
+    .setDepthWriteEnable(true)
+    .setDepthCompareOp(vk::CompareOp::eLess)
+    .setDepthBoundsTestEnable(false)
+    .setStencilTestEnable(false);
+
   vk::PipelineColorBlendAttachmentState color_blend_attachment;
   color_blend_attachment
       .setColorWriteMask(
@@ -209,6 +216,7 @@ OpaqueMaterial::Pipelines::Pipelines() {
       .setPViewportState(&viewport_state)
       .setPRasterizationState(&rasterizer_state)
       .setPMultisampleState(&multisample_state)
+      .setPDepthStencilState(&depth_stencil_state)
       .setPColorBlendState(&color_blend_state)
       .setLayout(Layouts::Get()->general_pipeline_layout())
       .setRenderPass(RenderPasses::Get()->GetRenderPass(RenderPass::Opaque))

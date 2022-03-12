@@ -62,9 +62,5 @@ target_include_directories(render
 target_compile_definitions(render PRIVATE GLFW_INCLUDE_VULKAN)
 
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(render PRIVATE "-std=c++17")
-elseif(MSVC)
-    target_compile_options(render PRIVATE "/std:c++17")
-endif()
+target_compile_options(render PRIVATE "/std:c++17")
 # target_compile_options(render PRIVATE "--std=c++17")

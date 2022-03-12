@@ -11,10 +11,11 @@ Renderer::Renderer() {
   render_passes_ = std::make_unique<RenderPasses>();
   layouts_ = std::make_unique<Layouts>();
 
-  InitFramebuffers();
   InitCommandPool();
   InitCommandBuffers();
   resource_manager_ = std::make_unique<ResourceManager>(transfer_buffer_);
+  InitDepthBuffer();
+  InitFramebuffers();
   InitSyncResources();
 
   scene_environment_map_ = std::make_unique<Texture>(
@@ -49,6 +50,7 @@ Renderer::~Renderer() {
   for (auto framebuffer : swapchain_framebuffers_) {
     d.destroyFramebuffer(framebuffer);
   }
+  d.destroyImageView(depth_buffer_view_);
   d.destroyCommandPool(command_pool_);
   d.destroySemaphore(sync_resources_.image_available);
   d.destroySemaphore(sync_resources_.render_finished);
@@ -59,13 +61,13 @@ void Renderer::InitFramebuffers() {
   auto image_views = Device::Get()->swapchain_image_views();
   auto swap_extent = Device::Get()->swapchain_extent();
   for (size_t i = 0; i < image_views.size(); i++) {
-    vk::ImageView attachments[] = {
+    std::array<vk::ImageView, 2> attachments = {
         image_views[i],
+        depth_buffer_view_,
     };
 
-    vk::FramebufferCreateInfo create_info;
-    create_info.setAttachmentCount(1)
-        .setPAttachments(attachments)
+    auto create_info = vk::FramebufferCreateInfo()
+        .setAttachments(attachments)
         .setWidth(swap_extent.width)
         .setHeight(swap_extent.height)
         .setRenderPass(render_passes_->GetRenderPass(RenderPass::Opaque))
@@ -87,6 +89,26 @@ void Renderer::InitSyncResources() {
       Device::Get()->device().createSemaphore(semaphore_create_info);
   sync_resources_.in_flight =
       Device::Get()->device().createFence(fence_create_info);
+}
+
+void Renderer::InitDepthBuffer() {
+  vk::Format depth_format = vk::Format::eD32Sfloat;
+  vk::Extent2D swap_extent = Device::Get()->swapchain_extent();
+
+  depth_buffer_image_ = resource_manager_->CreateImageUninitialized(vk::ImageUsageFlagBits::eDepthStencilAttachment, depth_format, swap_extent.width, swap_extent.height);
+
+  auto view_create_info = vk::ImageViewCreateInfo()
+    .setViewType(vk::ImageViewType::e2D)
+    .setFormat(depth_format)
+    .setComponents({})
+    .setImage(depth_buffer_image_.image)
+    .setSubresourceRange(vk::ImageSubresourceRange()
+      .setAspectMask(vk::ImageAspectFlagBits::eDepth)
+      .setBaseArrayLayer(0)
+      .setBaseMipLevel(0)
+      .setLayerCount(1)
+      .setLevelCount(1));
+  depth_buffer_view_ = Device::Get()->device().createImageView(view_create_info);
 }
 
 void Renderer::InitCommandPool() {
@@ -173,7 +195,10 @@ void Renderer::Render() {
   vk::ClearValue clear_color;
   clear_color.setColor(
       vk::ClearColorValue(std::array<float, 4>({0.0f, 0.0f, 1.0f, 1.0f})));
-  opaque_begin_info.setClearValueCount(1).setPClearValues(&clear_color);
+  auto clear_depth = vk::ClearValue()
+    .setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
+  std::array<vk::ClearValue, 2> clear_values = {clear_color, clear_depth};
+  opaque_begin_info.setClearValues(clear_values);
 
   render_buffer_.beginRenderPass(opaque_begin_info,
                                  vk::SubpassContents::eInline);

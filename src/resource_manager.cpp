@@ -134,8 +134,9 @@ ResourceManager::CreateImageUninitialized(vk::ImageUsageFlags usage,
   VmaAllocation allocation;
   VmaAllocationInfo allocation_info;
   if (vmaCreateImage(Device::Get()->allocator(),
-                 &(const VkImageCreateInfo&)image_create_info,
-                 &alloc_create_info, &image, &allocation, &allocation_info) != VK_SUCCESS) {
+                     &(const VkImageCreateInfo &)image_create_info,
+                     &alloc_create_info, &image, &allocation,
+                     &allocation_info) != VK_SUCCESS) {
     throw "Failed to create image";
   }
 
@@ -147,7 +148,8 @@ ResourceManager::CreateImageUninitialized(vk::ImageUsageFlags usage,
 ResourceManager::Image ResourceManager::CreateImageFromData(
     vk::ImageUsageFlags usage, vk::Format format, uint32_t width,
     uint32_t height, const void *data, size_t size) {
-  Image result = CreateImageUninitialized(usage | vk::ImageUsageFlagBits::eTransferDst, format, width, height);
+  Image result = CreateImageUninitialized(
+      usage | vk::ImageUsageFlagBits::eTransferDst, format, width, height);
 
   Buffer staging_buffer = CreateHostBufferWithData(
       vk::BufferUsageFlagBits::eTransferSrc, data, size);
@@ -219,20 +221,25 @@ void ResourceManager::TransitionImageLayout(vk::Image image,
                                             vk::ImageLayout before,
                                             vk::ImageLayout after) {
 
-  auto image_barrier =
-      vk::ImageMemoryBarrier()
-          .setOldLayout(before)
-          .setNewLayout(after)
-          .setImage(image)
-          .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-          .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-          .setSubresourceRange(
-              vk::ImageSubresourceRange()
-                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                  .setBaseArrayLayer(0)
-                  .setBaseMipLevel(0)
-                  .setLayerCount(1)
-                  .setLevelCount(1));
+  vk::ImageAspectFlags aspect;
+  if (after == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    aspect = vk::ImageAspectFlagBits::eDepth;
+  } else {
+    aspect = vk::ImageAspectFlagBits::eColor;
+  }
+
+  auto image_barrier = vk::ImageMemoryBarrier()
+                           .setOldLayout(before)
+                           .setNewLayout(after)
+                           .setImage(image)
+                           .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                           .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                           .setSubresourceRange(vk::ImageSubresourceRange()
+                                                    .setAspectMask(aspect)
+                                                    .setBaseArrayLayer(0)
+                                                    .setBaseMipLevel(0)
+                                                    .setLayerCount(1)
+                                                    .setLevelCount(1));
 
   vk::PipelineStageFlags src_stage;
   vk::PipelineStageFlags dst_stage;
@@ -250,6 +257,14 @@ void ResourceManager::TransitionImageLayout(vk::Image image,
     src_stage = vk::PipelineStageFlagBits::eTransfer;
     // TODO: Support reading textures in other shaders?
     dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else if (before == vk::ImageLayout::eUndefined &&
+             after == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    image_barrier.setSrcAccessMask({}).setDstAccessMask(
+        vk::AccessFlagBits::eDepthStencilAttachmentRead |
+        vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+
+    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+    dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
   } else {
     throw "Unsupported layout transition.";
   }

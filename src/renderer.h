@@ -39,6 +39,8 @@ private:
     void InitFramebuffers();
     void InitSyncResources();
 
+    void InitDepthBuffer();
+
     void InitSceneDescriptors();
 
     void UpdateSceneDescriptors();
@@ -51,6 +53,9 @@ private:
     std::unique_ptr<RenderPasses> render_passes_;
     std::unique_ptr<Layouts> layouts_;
     std::unique_ptr<ResourceManager> resource_manager_;
+
+    ResourceManager::Image depth_buffer_image_;
+    vk::ImageView depth_buffer_view_;
 
     std::vector<std::unique_ptr<Material>> materials_;
     std::vector<std::unique_ptr<Mesh>> meshes_;
