@@ -18,28 +18,18 @@ Renderer::Renderer() {
   InitSyncResources();
 
   scene_environment_map_ = std::make_unique<Texture>(
-      "C:/Users/thore/GoogleDrive/Documents/School/stanford-cs248/"
-      "final-project/quattro_canti_4k.png");
+      "../../assets/quattro_canti_4k.png", Texture::Usage::Color);
 
   materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "C:/Users/thore/GoogleDrive/Documents/School/stanford-cs248/"
-      "final-project/assets/Stone_Tiles_003_COLOR.png",
-      "C:/Users/thore/GoogleDrive/Documents/School/stanford-cs248/"
-      "final-project/assets/Stone_Tiles_003_NORM.png",
-      1.5f, 0.09f, 0.0f));
+      "../../assets/Stone_Tiles_003_COLOR.png",
+      "../../assets/Stone_Tiles_003_NORM.png", 1.5f, 0.09f, 0.0f));
   materials_.push_back(std::make_unique<OpaqueMaterial>(
-      "C:/Users/thore/GoogleDrive/Documents/School/stanford-cs248/"
-      "final-project/assets/Blue_Marble_002_COLOR.png",
-      "C:/Users/thore/GoogleDrive/Documents/School/stanford-cs248/"
-      "final-project/assets/Blue_Marble_002_NORM.png",
-      3.5f, 0.03f, 0.0f));
+      "../../assets/Blue_Marble_002_COLOR.png",
+      "../../assets/Blue_Marble_002_NORM.png", 2.5f, 0.05f, 0.0f));
 
-  meshes_.push_back(
-      std::make_unique<Mesh>("C:/Users/thore/GoogleDrive/Documents/School/"
-                             "stanford-cs248/final-project/plane.obj"));
-  meshes_.push_back(
-      std::make_unique<Mesh>("C:/Users/thore/GoogleDrive/Documents/School/"
-                             "stanford-cs248/final-project/teapot.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../assets/plane.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../assets/teapot.obj"));
+  meshes_.push_back(std::make_unique<Mesh>("../../assets/sphere.obj"));
 
   // Plane
   objects_.push_back(Object(materials_[0].get(), meshes_[0].get()));
@@ -229,11 +219,7 @@ void Renderer::Render() {
                                    0, sizeof(PushConstants), &push_constants);
     }
 
-
     for (auto &mesh : meshes_) {
-      render_buffer_.bindVertexBuffers(
-          0, {mesh->vertex_buffer(), instance_data_buffer_.buffer},
-          {0, instance_offset * sizeof(InstanceData)});
       uint32_t num_instances = 0;
       for (auto &object : objects_) {
         if (object.material() == material.get() &&
@@ -241,6 +227,14 @@ void Renderer::Render() {
           num_instances += 1;
         }
       }
+
+      if (num_instances == 0) {
+        continue;
+      }
+
+      render_buffer_.bindVertexBuffers(
+          0, {mesh->vertex_buffer(), instance_data_buffer_.buffer},
+          {0, instance_offset * sizeof(InstanceData)});
       render_buffer_.draw(static_cast<uint32_t>(mesh->vertex_count()),
                           num_instances, 0, 0);
 

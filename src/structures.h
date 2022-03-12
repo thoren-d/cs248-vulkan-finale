@@ -20,11 +20,11 @@ struct Vertex {
 
 struct InstanceData {
     glm::mat4 obj2world;
-    glm::mat4 obj2world_normal;
+    glm::mat3 obj2world_normal;
 };
 
 std::array<vk::VertexInputBindingDescription, 2> GetVertexInputBindingDescriptions();
-std::array<vk::VertexInputAttributeDescription, 12> GetVertexInputAttributeDescriptions();
+std::array<vk::VertexInputAttributeDescription, 11> GetVertexInputAttributeDescriptions();
 
 #define NUM_LIGHTS 3
 

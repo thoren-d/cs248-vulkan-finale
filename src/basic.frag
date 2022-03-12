@@ -19,8 +19,9 @@ layout (set=1, binding=1) uniform sampler2D diffuse_map;
 layout (set=1, binding=2) uniform sampler2D normal_map;
 
 layout(location = 0) in vec3 in_position;
-layout(location = 1) in vec2 in_texcoord;
-layout(location = 2) in vec3 in_normal;
+layout(location = 1) in vec3 in_normal;
+layout(location = 2) in vec2 in_texcoord;
+layout(location = 3) in mat3 in_tan2world;
 
 layout(location = 0) out vec4 outColor;
 
@@ -104,15 +105,18 @@ void main() {
     vec3 diffuse_color = texture(diffuse_map, in_texcoord).rgb;
     vec3 specular_color = material.metalness * diffuse_color + (1.0 - material.metalness) * vec3(1.0);
 
+    vec3 normal_map_value = 2.0 * texture(normal_map, in_texcoord).xyz - vec3(1.0);
+    vec3 N = normalize(in_tan2world * normal_map_value);
     vec3 V = normalize(scene.camera_position - in_position);
-    vec3 N = normalize(in_normal);
     vec3 R = normalize(reflect(-V, N));
+
 
     {
         // Environment Lighting
         vec3 intensity = texture(environment_map, VectorToSpherical(R)).rgb;
         float lambert = max(dot(R, N), 0.0);
         float fresnel = Fresnel(V, N);
+
         radiance +=  lambert * fresnel * specular_color * intensity;
     }
 

@@ -58,8 +58,8 @@ OpaqueMaterial::OpaqueMaterial(const std::string &diffuse_map,
                                const std::string &normal_map, float ior,
                                float roughness, float metalness)
     : pipelines_(GetPipelines()) {
-  diffuse_map_ = std::make_unique<Texture>(diffuse_map);
-  normal_map_ = std::make_unique<Texture>(normal_map);
+  diffuse_map_ = std::make_unique<Texture>(diffuse_map, Texture::Usage::Color);
+  normal_map_ = std::make_unique<Texture>(normal_map, Texture::Usage::Normal);
   params.ior = ior;
   params.roughness = roughness;
   params.metalness = metalness;

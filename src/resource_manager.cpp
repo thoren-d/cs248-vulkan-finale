@@ -134,7 +134,7 @@ ResourceManager::CreateImageUninitialized(vk::ImageUsageFlags usage,
   VmaAllocation allocation;
   VmaAllocationInfo allocation_info;
   if (vmaCreateImage(Device::Get()->allocator(),
-                 &(const VkImageCreateInfo)image_create_info,
+                 &(const VkImageCreateInfo&)image_create_info,
                  &alloc_create_info, &image, &allocation, &allocation_info) != VK_SUCCESS) {
     throw "Failed to create image";
   }

@@ -26,8 +26,7 @@ Mesh::Mesh(const std::string &filename) {
   Assimp::Importer importer;
 
   const aiScene *scene = importer.ReadFile(
-      filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate |
-                    aiProcess_JoinIdenticalVertices | aiProcess_MakeLeftHanded);
+      filename, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_MakeLeftHanded);
 
   if (scene->mNumMeshes < 1) {
     throw "No meshes in the file.";
@@ -42,6 +41,7 @@ Mesh::Mesh(const std::string &filename) {
     aiFace &face = mesh->mFaces[face_idx];
     if (face.mNumIndices != 3)
       throw "Not a triangle!";
+
     for (size_t i = 0; i < 3; i++) {
       auto idx = face.mIndices[i];
       aiVector3D pos = mesh->mVertices[idx];

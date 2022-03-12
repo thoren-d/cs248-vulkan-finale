@@ -9,7 +9,13 @@
 
 class Texture {
 public:
-    Texture(const std::string& filename);
+    enum class Usage {
+        Color,
+        Normal,
+        HDRI,
+    };
+
+    Texture(const std::string& filename, Usage usage);
     ~Texture();
 
     vk::ImageView image_view() {

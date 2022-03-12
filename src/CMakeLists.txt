@@ -3,7 +3,7 @@ add_custom_target(build-time-make-directory ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/")
 
 function(add_shader shader)
-    add_custom_target(${shader} COMMAND "$ENV{VULKAN_SDK}/Bin/glslc.exe" "-o" "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${shader}.spv" "${CMAKE_CURRENT_SOURCE_DIR}/${shader}"
+    add_custom_target(${shader} COMMAND "$ENV{VULKAN_SDK}/Bin/glslc.exe" "-o" "${CMAKE_CURRENT_BINARY_DIR}/${shader}.spv" "${CMAKE_CURRENT_SOURCE_DIR}/${shader}"
             DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${shader}" build-time-make-directory)
 endfunction()
 
@@ -61,5 +61,10 @@ target_include_directories(render
         "${CMAKE_SOURCE_DIR}/deps/stb")
 target_compile_definitions(render PRIVATE GLFW_INCLUDE_VULKAN)
 
-target_compile_options(render PRIVATE "/std:c++17")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(render PRIVATE "-std=c++17")
+elseif(MSVC)
+    target_compile_options(render PRIVATE "/std:c++17")
+endif()
 # target_compile_options(render PRIVATE "--std=c++17")

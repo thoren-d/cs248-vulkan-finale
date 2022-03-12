@@ -4,7 +4,7 @@
 
 #include "device.h"
 
-Texture::Texture(const std::string &filename) {
+Texture::Texture(const std::string &filename, Usage usage) {
   int width;
   int height;
   int channels;
@@ -12,7 +12,17 @@ Texture::Texture(const std::string &filename) {
       stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
   size_t size = width * height * 4;
 
-  vk::Format format = vk::Format::eR8G8B8A8Srgb;
+  vk::Format format;
+  switch (usage) {
+    case Usage::Color:
+      format = vk::Format::eR8G8B8A8Srgb;
+      break;
+    case Usage::Normal:
+      format = vk::Format::eR8G8B8A8Unorm;
+      break;
+    case Usage::HDRI:
+      throw "Not implemented.";
+  };
 
   if (!data) {
     throw "Failed to load texture image.";

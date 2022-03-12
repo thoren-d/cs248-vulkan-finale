@@ -24,7 +24,7 @@ glm::mat4 Camera::GetViewProj() {
     position = look_at + r * dir_to_camera;
 
     vk::Extent2D viewport = Device::Get()->swapchain_extent();
-    auto proj = glm::perspectiveFov(glm::pi<float>() / 3.0f, (float)viewport.width, (float)viewport.height, 0.1f, 100.0f);
+    auto proj = glm::perspectiveFov(glm::pi<float>() / 3.0f, (float)viewport.width, (float)viewport.height, 0.2f, 100.0f);
     auto view = glm::lookAt(position, look_at, glm::vec3(0.0f, 1.0f, 0.0f));
     proj[1][1]  *= -1.0f;
     return proj * view;
