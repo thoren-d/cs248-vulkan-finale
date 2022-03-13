@@ -29,8 +29,15 @@ vk::DescriptorSetLayout CreateDescriptorSetLayout_Scene() {
           .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
           .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-  std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
-      ubo_binding, environment_map_binding, shadow_map_binding};
+  auto irradiance_map_binding =
+      vk::DescriptorSetLayoutBinding()
+          .setBinding(3)
+          .setDescriptorCount(1)
+          .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+          .setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+  std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {
+      ubo_binding, environment_map_binding, shadow_map_binding, irradiance_map_binding};
 
   vk::DescriptorSetLayoutCreateInfo create_info;
   create_info.setBindingCount(bindings.size()).setPBindings(bindings.data());

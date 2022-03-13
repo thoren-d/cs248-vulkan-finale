@@ -15,6 +15,7 @@ layout (set=0, binding=0) uniform Scene {
 } scene;
 layout (set=0, binding=1) uniform sampler2D environment_map;
 layout (set=0, binding=2) uniform sampler2D shadow_maps[NUM_LIGHTS];
+layout (set=0, binding=3) uniform sampler2D irradiance_map;
 
 layout (set=1, binding=0) uniform Material {
     float ior;
@@ -121,9 +122,11 @@ void main() {
         // Environment Lighting
         vec3 intensity = texture(environment_map, VectorToSpherical(R)).rgb;
         float lambert = max(dot(R, N), 0.0);
-        float fresnel = Fresnel(V, N);
+        float fresnel = Fresnel(V, N) * max(0.0, 1 - 2 * material.roughness);
 
         radiance +=  lambert * fresnel * specular_color * intensity;
+
+        radiance += diffuse_color * texture(irradiance_map, VectorToSpherical(N)).rgb * (1.0 / (4 * PI));
     }
 
     for (int i = 0; i < NUM_LIGHTS; i++) {

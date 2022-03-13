@@ -8,9 +8,15 @@ Texture::Texture(const std::string &filename, Usage usage) {
   int width;
   int height;
   int channels;
-  stbi_uc *data =
-      stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-  size_t size = width * height * 4;
+  void* data = nullptr;
+  size_t size = 0;
+  if (usage == Usage::HDRI) {
+    data = stbi_loadf(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    size = width * height * sizeof(float) * 4;
+  } else {
+    data = stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    size = width * height * 4;
+  }
 
   vk::Format format;
   switch (usage) {
@@ -21,7 +27,8 @@ Texture::Texture(const std::string &filename, Usage usage) {
       format = vk::Format::eR8G8B8A8Unorm;
       break;
     case Usage::HDRI:
-      throw "Not implemented.";
+      format = vk::Format::eR32G32B32A32Sfloat;
+      break;
   };
 
   if (!data) {

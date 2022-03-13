@@ -22,7 +22,9 @@ Renderer::Renderer() {
   InitSyncResources();
 
   scene_environment_map_ = std::make_unique<Texture>(
-      "../../../assets/quattro_canti_4k.png", Texture::Usage::Color);
+      "../../../assets/quattro_canti_4k.hdr", Texture::Usage::HDRI);
+  scene_irradiance_map_ = std::make_unique<Texture>(
+      "../../../assets/quattro_canti_irradiance_2k.hdr", Texture::Usage::HDRI);
 
   // Lights
   Light back{
@@ -458,6 +460,19 @@ void Renderer::UpdateSceneDescriptors() {
           .setDstArrayElement(0)
           .setPImageInfo(&env_info);
 
+  auto irr_info = vk::DescriptorImageInfo()
+    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+    .setImageView(scene_irradiance_map_->image_view())
+    .setSampler(scene_irradiance_map_->sampler());
+  auto irr_write =
+      vk::WriteDescriptorSet()
+          .setDescriptorCount(1)
+          .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+          .setDstSet(scene_descriptors_)
+          .setDstBinding(3)
+          .setDstArrayElement(0)
+          .setPImageInfo(&irr_info);
+
   std::array<vk::DescriptorImageInfo, NUM_LIGHTS> shadow_map_infos = {};
   for (int i = 0; i < NUM_LIGHTS; i++) {
     shadow_map_infos[i] =
@@ -476,7 +491,7 @@ void Renderer::UpdateSceneDescriptors() {
           .setImageInfo(shadow_map_infos);
 
   Device::Get()->device().updateDescriptorSets(
-      {ubo_write, env_write, shadow_maps_write}, {});
+      {ubo_write, env_write, shadow_maps_write, irr_write}, {});
 }
 
 Material *Renderer::AddMaterial(std::unique_ptr<Material> material) {

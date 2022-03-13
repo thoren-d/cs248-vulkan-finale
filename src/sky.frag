@@ -15,6 +15,7 @@ layout (set=0, binding=0) uniform Scene {
 } scene;
 layout (set=0, binding=1) uniform sampler2D environment_map;
 layout (set=0, binding=2) uniform sampler2D shadow_maps[NUM_LIGHTS];
+layout (set=0, binding=3) uniform sampler2D irradiance_map;
 
 layout(location = 0) in vec3 in_direction;
 

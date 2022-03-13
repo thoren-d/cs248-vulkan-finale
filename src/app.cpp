@@ -56,7 +56,7 @@ void App::LoadScene() {
       "../../../assets/Blue_Marble_002_NORM.png", 2.7f, 0.04f, 0.0f));
   auto brick = renderer_->AddMaterial(std::make_unique<OpaqueMaterial>(
       "../../../assets/brick_color_map.png",
-      "../../../assets/brick_normal_map.png", 1.2f, 0.25f, 0.0f));
+      "../../../assets/brick_normal_map.png", 1.2f, 0.55f, 0.0f));
 
   auto plane = renderer_->AddMesh("../../../assets/plane.obj");
   auto teapot = renderer_->AddMesh("../../../assets/teapot_low.obj");

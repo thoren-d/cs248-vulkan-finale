@@ -86,6 +86,7 @@ private:
     vk::DescriptorSet scene_descriptors_;
     ResourceManager::Buffer scene_uniform_buffer_;
     std::unique_ptr<Texture> scene_environment_map_;
+    std::unique_ptr<Texture> scene_irradiance_map_;
 
     vk::Pipeline sky_pipeline_;
 
