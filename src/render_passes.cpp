@@ -9,20 +9,20 @@ vk::RenderPass CreateOpaqueRenderPass() {
     
     vk::AttachmentDescription color_attachment;
     color_attachment.setFormat(device->swapchain_format())
-        .setSamples(vk::SampleCountFlagBits::e1)
+        .setSamples(Device::Get()->msaa_samples())
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+        .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
     vk::AttachmentReference color_attachment_ref;
     color_attachment_ref.setAttachment(0)
         .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
     auto depth_attachment = vk::AttachmentDescription()
         .setFormat(vk::Format::eD32Sfloat)
-        .setSamples(vk::SampleCountFlagBits::e1)
+        .setSamples(Device::Get()->msaa_samples())
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
@@ -33,11 +33,25 @@ vk::RenderPass CreateOpaqueRenderPass() {
         .setAttachment(1)
         .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
+    auto resolve_attachment = vk::AttachmentDescription()
+        .setFormat(device->swapchain_format())
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    auto resolve_attachment_ref = vk::AttachmentReference()
+        .setAttachment(2)
+        .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
     vk::SubpassDescription subpass;
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
         .setColorAttachmentCount(1)
         .setPColorAttachments(&color_attachment_ref)
-        .setPDepthStencilAttachment(&depth_attachment_ref);
+        .setPDepthStencilAttachment(&depth_attachment_ref)
+        .setResolveAttachments(resolve_attachment_ref);
 
     vk::SubpassDependency dependency;
     dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
@@ -47,7 +61,7 @@ vk::RenderPass CreateOpaqueRenderPass() {
         .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
         .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
 
-    const std::array<vk::AttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
+    const std::array<vk::AttachmentDescription, 3> attachments = {color_attachment, depth_attachment, resolve_attachment};
     const std::array<vk::SubpassDescription, 1> subpasses = {subpass};
     const std::array<vk::SubpassDependency, 1> dependencies = {dependency};
 

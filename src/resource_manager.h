@@ -76,11 +76,13 @@ public:
   Buffer CreateDeviceBufferWithData(vk::BufferUsageFlags usage,
                                     const void *data, size_t size);
 
-  Image CreateImageUninitialized(vk::ImageUsageFlags usage, vk::Format format,
-                                 uint32_t width, uint32_t height, uint32_t mip_levels = 1);
+  Image CreateImageUninitialized(
+      vk::ImageUsageFlags usage, vk::Format format, uint32_t width,
+      uint32_t height, uint32_t mip_levels = 1,
+      vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1);
   Image CreateImageFromData(vk::ImageUsageFlags usage, vk::Format format,
-                            uint32_t width, uint32_t height, uint32_t mip_levels, const void *data,
-                            size_t size);
+                            uint32_t width, uint32_t height,
+                            uint32_t mip_levels, const void *data, size_t size);
   void TransitionImageLayout(vk::Image image, vk::ImageLayout before,
                              vk::ImageLayout after, uint32_t mip_levels);
 
@@ -89,8 +91,8 @@ public:
   void WaitForTransfers();
 
 private:
-
-  void GenerateMipmaps(vk::Image image, int32_t width, int32_t height, uint32_t mip_levels);
+  void GenerateMipmaps(vk::Image image, int32_t width, int32_t height,
+                       uint32_t mip_levels);
 
   vk::PhysicalDeviceMemoryProperties memory_properties_;
   vk::CommandBuffer transfer_commands_;

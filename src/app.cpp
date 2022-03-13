@@ -62,6 +62,7 @@ void App::LoadScene() {
   auto teapot = renderer_->AddMesh("../../../assets/teapot_low.obj");
   auto sphere = renderer_->AddMesh("../../../assets/sphere.obj");
   auto pedestal = renderer_->AddMesh("../../../assets/pedestal.obj");
+  auto dragonfly = renderer_->AddMesh("../../../assets/dragonfly.obj");
 
   auto floor = renderer_->AddObject(plane, tile);
   floor->position() = glm::vec3(0.0f, -1.0f, 0.0f);
@@ -72,6 +73,12 @@ void App::LoadScene() {
   auto pedestal_object = renderer_->AddObject(pedestal, brick);
   pedestal_object->scale() = glm::vec3(0.25f);
   pedestal_object->position() = glm::vec3(0.0f, -0.5f, 0.0f);
+
+  auto dragonfly_object = renderer_->AddObject(dragonfly, blue_marble);
+  dragonfly_object->position() = glm::vec3(1.5f, 1.0f, 0.0f);
+  dragonfly_object->rotation() = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
+  dragonfly_object->scale() = glm::vec3(0.03f);
+  satellites_.push_back(dragonfly_object);
 
   for (size_t i = 0; i < 9001; i++) {
     auto satellite =
@@ -121,9 +128,18 @@ void App::Update(double dt) {
     auto old_pos = satellite->position();
     glm::vec3 velocity = glm::vec3(old_pos.z, 0.0f, -old_pos.x);
     velocity = 0.5f * velocity / (1.0f + glm::length(velocity) * glm::length(velocity));
+
+    if (i == 0)
+      velocity *= 2.0f;
+
     auto new_pos = old_pos + velocity * (float)dt_phys;
     satellite->position() = new_pos;
-    satellite->rotation() *= glm::quat(glm::vec3(0.0f, dt_phys * (i % 9), 0.0f));
+    if (i > 0) {
+      satellite->rotation() *= glm::quat(glm::vec3(0.0f, dt_phys * (i % 9), 0.0f));
+    } else {
+      auto q = glm::quatLookAt(-satellite->position(), glm::vec3(0.0f, 1.0f, 0.0f));
+      satellite->rotation() = q * glm::quat(glm::vec3(0.0f, 3.14159f / 2.0f, 0.0f));
+    }
   }
 
 

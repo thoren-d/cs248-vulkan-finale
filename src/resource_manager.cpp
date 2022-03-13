@@ -114,7 +114,7 @@ ResourceManager::CreateDeviceBufferWithData(vk::BufferUsageFlags usage,
 ResourceManager::Image
 ResourceManager::CreateImageUninitialized(vk::ImageUsageFlags usage,
                                           vk::Format format, uint32_t width,
-                                          uint32_t height, uint32_t mip_levels) {
+                                          uint32_t height, uint32_t mip_levels, vk::SampleCountFlagBits sample_count) {
   auto image_create_info = vk::ImageCreateInfo()
                                .setImageType(vk::ImageType::e2D)
                                .setExtent(vk::Extent3D(width, height, 1))
@@ -125,7 +125,7 @@ ResourceManager::CreateImageUninitialized(vk::ImageUsageFlags usage,
                                .setInitialLayout(vk::ImageLayout::eUndefined)
                                .setUsage(usage)
                                .setSharingMode(vk::SharingMode::eExclusive)
-                               .setSamples(vk::SampleCountFlagBits::e1);
+                               .setSamples(sample_count);
 
   VmaAllocationCreateInfo alloc_create_info = {};
   alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;

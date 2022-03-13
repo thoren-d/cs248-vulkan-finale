@@ -4,6 +4,6 @@
 #include <cstdint>
 #include <cstddef>
 
-constexpr uint32_t kShadowMapSize = 4096;
+constexpr uint32_t kShadowMapSize = 1024;
 
 #endif CONSTANTS_H_

@@ -197,8 +197,10 @@ void OpaqueMaterial::Pipelines::InitOpaquePass() {
       .setDepthBiasEnable(false);
 
   vk::PipelineMultisampleStateCreateInfo multisample_state;
-  multisample_state.setSampleShadingEnable(false).setRasterizationSamples(
-      vk::SampleCountFlagBits::e1);
+  multisample_state
+    .setSampleShadingEnable(true)
+    .setMinSampleShading(1.0f)
+    .setRasterizationSamples(Device::Get()->msaa_samples());
 
   auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
                                  .setDepthTestEnable(true)
@@ -399,7 +401,7 @@ vk::Pipeline GetSkyPipeline() {
   auto multisample_state =
       vk::PipelineMultisampleStateCreateInfo()
           .setSampleShadingEnable(false)
-          .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+          .setRasterizationSamples(Device::Get()->msaa_samples());
 
   auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
                                  .setDepthTestEnable(true)

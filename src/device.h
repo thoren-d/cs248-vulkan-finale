@@ -62,6 +62,10 @@ public:
         return present_queue_family_;
     }
 
+    vk::SampleCountFlagBits msaa_samples() {
+        return msaa_samples_;
+    }
+
     void Present();
 private:
 
@@ -93,6 +97,8 @@ private:
     vk::Queue present_queue_;
 
     VmaAllocator allocator_;
+
+    vk::SampleCountFlagBits msaa_samples_;
 
 };
 

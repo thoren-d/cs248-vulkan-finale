@@ -150,6 +150,18 @@ bool Device::IsDeviceSuitable(vk::PhysicalDevice device) {
 void Device::InitLogicalDevice() {
     physical_device_ = PickPhysicalDevice();
 
+    auto props = physical_device_.getProperties();
+    auto counts = props.limits.framebufferColorSampleCounts | props.limits.framebufferDepthSampleCounts;
+    msaa_samples_ = [&]() {
+        // if (counts & vk::SampleCountFlagBits::e64) return vk::SampleCountFlagBits::e64;
+        // if (counts & vk::SampleCountFlagBits::e32) return vk::SampleCountFlagBits::e32;
+        // if (counts & vk::SampleCountFlagBits::e16) return vk::SampleCountFlagBits::e16;
+        // if (counts & vk::SampleCountFlagBits::e8) return vk::SampleCountFlagBits::e8;
+        if (counts & vk::SampleCountFlagBits::e4) return vk::SampleCountFlagBits::e4;
+        if (counts & vk::SampleCountFlagBits::e2) return vk::SampleCountFlagBits::e2;
+        return vk::SampleCountFlagBits::e1;
+    }();
+
     auto queue_families = physical_device_.getQueueFamilyProperties();
     // Find graphics queue family
     for (size_t i = 0; i < queue_families.size(); i++) {
@@ -183,6 +195,7 @@ void Device::InitLogicalDevice() {
 
     vk::PhysicalDeviceFeatures features = {};
     features.samplerAnisotropy = true;
+    features.sampleRateShading = true;
 
     vk::DeviceCreateInfo create_info;
     create_info.setPQueueCreateInfos(infos)

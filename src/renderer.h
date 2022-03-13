@@ -54,6 +54,7 @@ private:
     void InitSyncResources();
 
     void InitDepthBuffer();
+    void InitColorBuffer();
     void InitShadowMaps();
 
     void InitSceneDescriptors();
@@ -71,6 +72,9 @@ private:
 
     ResourceManager::Image depth_buffer_image_;
     vk::ImageView depth_buffer_view_;
+
+    ResourceManager::Image color_buffer_image_;
+    vk::ImageView color_buffer_view_;
 
     std::vector<std::unique_ptr<Material>> materials_;
     std::vector<std::unique_ptr<Mesh>> meshes_;

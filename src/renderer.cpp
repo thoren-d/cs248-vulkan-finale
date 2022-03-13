@@ -16,6 +16,7 @@ Renderer::Renderer() {
   InitCommandPool();
   InitCommandBuffers();
   resource_manager_ = std::make_unique<ResourceManager>(transfer_buffer_);
+  InitColorBuffer();
   InitDepthBuffer();
   InitFramebuffers();
   InitShadowMaps();
@@ -72,6 +73,7 @@ Renderer::~Renderer() {
     d.destroyFramebuffer(framebuffer);
   }
   d.destroyImageView(depth_buffer_view_);
+  d.destroyImageView(color_buffer_view_);
   d.destroyCommandPool(command_pool_);
   d.destroySemaphore(sync_resources_.image_available);
   d.destroySemaphore(sync_resources_.render_finished);
@@ -82,9 +84,10 @@ void Renderer::InitFramebuffers() {
   auto image_views = Device::Get()->swapchain_image_views();
   auto swap_extent = Device::Get()->swapchain_extent();
   for (size_t i = 0; i < image_views.size(); i++) {
-    std::array<vk::ImageView, 2> attachments = {
-        image_views[i],
+    std::array<vk::ImageView, 3> attachments = {
+        color_buffer_view_,
         depth_buffer_view_,
+        image_views[i],
     };
 
     auto create_info =
@@ -119,7 +122,7 @@ void Renderer::InitDepthBuffer() {
 
   depth_buffer_image_ = resource_manager_->CreateImageUninitialized(
       vk::ImageUsageFlagBits::eDepthStencilAttachment, depth_format,
-      swap_extent.width, swap_extent.height);
+      swap_extent.width, swap_extent.height, 1, Device::Get()->msaa_samples());
 
   auto view_create_info =
       vk::ImageViewCreateInfo()
@@ -136,6 +139,30 @@ void Renderer::InitDepthBuffer() {
                   .setLevelCount(1));
   depth_buffer_view_ =
       Device::Get()->device().createImageView(view_create_info);
+}
+
+void Renderer::InitColorBuffer() {
+  vk::Format format = Device::Get()->swapchain_format();
+  vk::Extent2D extent = Device::Get()->swapchain_extent();
+
+  color_buffer_image_ = resource_manager_->CreateImageUninitialized(
+      vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment, format, extent.width,
+      extent.height, 1, Device::Get()->msaa_samples());
+
+  auto view_create_info =
+      vk::ImageViewCreateInfo()
+          .setViewType(vk::ImageViewType::e2D)
+          .setFormat(format)
+          .setComponents({})
+          .setImage(color_buffer_image_.image)
+          .setSubresourceRange(
+              vk::ImageSubresourceRange()
+                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                  .setBaseArrayLayer(0)
+                  .setBaseMipLevel(0)
+                  .setLayerCount(1)
+                  .setLevelCount(1));
+  color_buffer_view_ = Device::Get()->device().createImageView(view_create_info);
 }
 
 void Renderer::InitShadowMaps() {
@@ -461,9 +488,9 @@ void Renderer::UpdateSceneDescriptors() {
           .setPImageInfo(&env_info);
 
   auto irr_info = vk::DescriptorImageInfo()
-    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-    .setImageView(scene_irradiance_map_->image_view())
-    .setSampler(scene_irradiance_map_->sampler());
+                      .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                      .setImageView(scene_irradiance_map_->image_view())
+                      .setSampler(scene_irradiance_map_->sampler());
   auto irr_write =
       vk::WriteDescriptorSet()
           .setDescriptorCount(1)

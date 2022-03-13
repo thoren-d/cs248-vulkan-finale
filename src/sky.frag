@@ -35,9 +35,23 @@ vec2 VectorToSpherical(vec3 D) {
     return vec2(u, v);
 }
 
+vec4 SampleSpherical(sampler2D tex, vec3 D) {
+    float dx = length(dFdx(D)) / 2;
+    float dy = length(dFdy(D)) / 2;
+
+    // angle between two points on a unit circle that are dx apart.
+    float du = acos(0.5 * (2.0 - dx*dx));
+    float dv = acos(0.5 * (2.0 - dy*dy));
+
+    ivec2 tex_size = textureSize(tex, 0);
+    float lod = log2(max(1.0, max(du * tex_size.x, dv * tex_size.y))) - 1.0;
+
+    return textureLod(tex, VectorToSpherical(D), lod);
+}
+
 layout(location = 0) out vec4 out_color;
 
 void main() {
-    out_color = texture(environment_map, VectorToSpherical(normalize(in_direction)));
+    out_color = SampleSpherical(environment_map, normalize(in_direction));
 }
 
