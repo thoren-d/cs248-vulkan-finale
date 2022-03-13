@@ -35,9 +35,11 @@ Texture::Texture(const std::string &filename, Usage usage) {
     throw "Failed to load texture image.";
   }
 
+  uint32_t mip_levels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+
   image_ = ResourceManager::Get()->CreateImageFromData(
       vk::ImageUsageFlagBits::eSampled, format, width,
-      height, data, size);
+      height, mip_levels, data, size);
 
   auto view_create_info =
       vk::ImageViewCreateInfo()
@@ -51,7 +53,7 @@ Texture::Texture(const std::string &filename, Usage usage) {
                   .setBaseArrayLayer(0)
                   .setBaseMipLevel(0)
                   .setLayerCount(1)
-                  .setLevelCount(1));
+                  .setLevelCount(mip_levels));
   image_view_ = Device::Get()->device().createImageView(view_create_info);
 
   auto sampler_info = vk::SamplerCreateInfo()
@@ -59,7 +61,11 @@ Texture::Texture(const std::string &filename, Usage usage) {
                           .setAddressModeV(vk::SamplerAddressMode::eRepeat)
                           .setMagFilter(vk::Filter::eLinear)
                           .setMinFilter(vk::Filter::eLinear)
-                          .setMipmapMode(vk::SamplerMipmapMode::eLinear);
+                          .setMipmapMode(vk::SamplerMipmapMode::eNearest)
+                          .setMinLod(0.0f)
+                          .setMaxLod(static_cast<float>(mip_levels))
+                          .setAnisotropyEnable(true)
+                          .setMaxAnisotropy(16.0f);
   sampler_ = Device::Get()->device().createSampler(sampler_info);
 }
 

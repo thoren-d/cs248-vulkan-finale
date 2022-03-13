@@ -181,11 +181,16 @@ void Device::InitLogicalDevice() {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
+    vk::PhysicalDeviceFeatures features = {};
+    features.samplerAnisotropy = true;
+
     vk::DeviceCreateInfo create_info;
     create_info.setPQueueCreateInfos(infos)
         .setQueueCreateInfoCount((graphics_queue_family_ == present_queue_family_) ? 1 : 2)
         .setEnabledExtensionCount((uint32_t)required_extensions.size())
-        .setPpEnabledExtensionNames(required_extensions.data());
+        .setPpEnabledExtensionNames(required_extensions.data())
+        .setPEnabledFeatures(&features);
+    
 
     device_ = physical_device_.createDevice(create_info);
 

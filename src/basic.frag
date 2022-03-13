@@ -50,6 +50,20 @@ vec2 VectorToSpherical(vec3 D) {
     return vec2(u, v);
 }
 
+vec3 SampleSpherical(sampler2D tex, vec3 D) {
+    float dx = length(dFdx(D));
+    float dy = length(dFdy(D));
+
+    // angle between two points on a unit circle that are dx apart.
+    float du = acos(0.5 * (2.0 - dx*dx));
+    float dv = acos(0.5 * (2.0 - dy*dy));
+
+    ivec2 tex_size = textureSize(tex, 0);
+    float lod = log2(max(1.0, max(du * tex_size.x, dv * tex_size.y)));
+
+    return textureLod(tex, VectorToSpherical(D), lod).rgb;
+}
+
 // Schlick's Approximation for fresnel factor
 // https://en.wikipedia.org/wiki/Schlick%27s_approximation
 float Fresnel(vec3 V, vec3 N) {
@@ -120,13 +134,14 @@ void main() {
 
     {
         // Environment Lighting
-        vec3 intensity = texture(environment_map, VectorToSpherical(R)).rgb;
+        // vec3 intensity = textureLod(environment_map, VectorToSpherical(R), 0.0).rgb;
+        vec3 intensity = SampleSpherical(environment_map, R);
         float lambert = max(dot(R, N), 0.0);
         float fresnel = Fresnel(V, N) * max(0.0, 1 - 2 * material.roughness);
 
         radiance +=  lambert * fresnel * specular_color * intensity;
 
-        radiance += diffuse_color * texture(irradiance_map, VectorToSpherical(N)).rgb * (1.0 / (4 * PI));
+        radiance += diffuse_color * texture(irradiance_map, VectorToSpherical(N)).rgb * (1.0 / PI);
     }
 
     for (int i = 0; i < NUM_LIGHTS; i++) {

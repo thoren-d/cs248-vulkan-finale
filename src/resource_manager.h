@@ -42,6 +42,7 @@ public:
     vk::Image image;
     VmaAllocation allocation;
     vk::MemoryPropertyFlags flags;
+    uint32_t mip_levels = 1;
 
     Image() : image(nullptr) {}
     Image(vk::Image i, VmaAllocation a, vk::MemoryPropertyFlags f)
@@ -76,18 +77,20 @@ public:
                                     const void *data, size_t size);
 
   Image CreateImageUninitialized(vk::ImageUsageFlags usage, vk::Format format,
-                                 uint32_t width, uint32_t height);
+                                 uint32_t width, uint32_t height, uint32_t mip_levels = 1);
   Image CreateImageFromData(vk::ImageUsageFlags usage, vk::Format format,
-                            uint32_t width, uint32_t height, const void *data,
+                            uint32_t width, uint32_t height, uint32_t mip_levels, const void *data,
                             size_t size);
   void TransitionImageLayout(vk::Image image, vk::ImageLayout before,
-                             vk::ImageLayout after);
+                             vk::ImageLayout after, uint32_t mip_levels);
 
   void UpdateHostBufferData(Buffer &buffer, const void *data, size_t size);
 
   void WaitForTransfers();
 
 private:
+
+  void GenerateMipmaps(vk::Image image, int32_t width, int32_t height, uint32_t mip_levels);
 
   vk::PhysicalDeviceMemoryProperties memory_properties_;
   vk::CommandBuffer transfer_commands_;
